@@ -58,6 +58,13 @@ nng_alloc(size_t sz)
 	return (nni_alloc(sz));
 }
 
+void *
+nng_zalloc(size_t sz)
+{
+	return (nni_zalloc(sz));
+}
+
+
 void
 nng_free(void *buf, size_t sz)
 {
@@ -65,9 +72,33 @@ nng_free(void *buf, size_t sz)
 }
 
 char *
+nng_strcasestr(const char *s1, const char *s2)
+{
+	return nni_strcasestr(s1, s2);
+}
+
+int
+nng_strcasecmp(const char *s1, const char *s2)
+{
+	return nni_strcasecmp(s1, s2);
+}
+
+int
+nng_strncasecmp(const char *s1, const char *s2, size_t n)
+{
+	return nni_strncasecmp(s1, s2, n);
+}
+
+char *
 nng_strdup(const char *src)
 {
 	return (nni_strdup(src));
+}
+
+char *
+nng_strndup(const char *src, size_t len)
+{
+	return (nni_strndup(src, len));
 }
 
 void

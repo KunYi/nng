@@ -46,6 +46,36 @@ static struct {
 	},
 #endif
 	{
+	    .scheme         = "mqtt-tcp",
+	    .dialer_alloc   = nni_tcp_dialer_alloc,
+	    .listener_alloc = nni_tcp_listener_alloc,
+	},
+	{
+	    .scheme         = "mqtt-tcp4",
+	    .dialer_alloc   = nni_tcp_dialer_alloc,
+	    .listener_alloc = nni_tcp_listener_alloc,
+	},
+	{
+	    .scheme         = "mqtt-tcp6",
+	    .dialer_alloc   = nni_tcp_dialer_alloc,
+	    .listener_alloc = nni_tcp_listener_alloc,
+	},
+	{
+	    .scheme         = "tls+mqtt-tcp",
+	    .dialer_alloc   = nni_tls_dialer_alloc,
+	    .listener_alloc = nni_tls_listener_alloc,
+	},
+	{
+	    .scheme         = "tls+mqtt-tcp4",
+	    .dialer_alloc   = nni_tls_dialer_alloc,
+	    .listener_alloc = nni_tls_listener_alloc,
+	},
+	{
+	    .scheme         = "tls+mqtt-tcp6",
+	    .dialer_alloc   = nni_tls_dialer_alloc,
+	    .listener_alloc = nni_tls_listener_alloc,
+	},
+	{
 	    .scheme         = "tcp",
 	    .dialer_alloc   = nni_tcp_dialer_alloc,
 	    .listener_alloc = nni_tcp_listener_alloc,

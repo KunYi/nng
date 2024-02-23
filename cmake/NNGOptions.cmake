@@ -47,6 +47,13 @@ option(NNG_ENABLE_COMPAT "Enable legacy nanomsg API." ON)
 option(NNG_ENABLE_STATS "Enable statistics." ON)
 mark_as_advanced(NNG_ENABLE_STATS)
 
+# SQLITE API support.
+option (NNG_ENABLE_SQLITE "Enable SQLITE API." OFF)
+if (NNG_ENABLE_SQLITE)
+    set(NNG_SUPP_SQLITE ON)
+endif()
+mark_as_advanced(NNG_ENABLE_SQLITE)
+
 # Protocols.
 option (NNG_PROTO_BUS0 "Enable BUSv0 protocol." ON)
 mark_as_advanced(NNG_PROTO_BUS0)
@@ -80,6 +87,27 @@ mark_as_advanced(NNG_PROTO_RESPONDENT0)
 
 option (NNG_PROTO_SURVEYOR0 "Enable SURVEYORv0 protocol." ON)
 mark_as_advanced(NNG_PROTO_SURVEYOR0)
+
+option (NNG_PROTO_MQTT_CLIENT "Enable MQTT Client protocol." ON)
+mark_as_advanced(NNG_PROTO_MQTT_CLIENT)
+
+option (NNG_PROTO_MQTT_QUIC_CLIENT "Enable MQTT over msQuic Client protocol." OFF)
+mark_as_advanced(NNG_PROTO_MQTT_QUIC_CLIENT)
+
+option(NNG_ENABLE_QUIC "Enable Quic support." OFF)
+if (NNG_ENABLE_QUIC)
+    set(NNG_SUPP_QUIC ON)
+    # For now we only accept msQuic as the quic lib
+endif ()
+
+if (NNG_ENABLE_QUIC)
+    set(NNG_QUIC_LIBS msquic none)
+    # We assume MSQUIC only for now.  (Someday replaced perhaps with ngtcp.)
+    set(NNG_QUIC_LIB msquic CACHE STRING "Quic lib to use.")
+    set_property(CACHE NNG_QUIC_LIB PROPERTY STRINGS ${NNG_QUIC_LIBS})
+else ()
+    set(NNG_QUIC_LIB none)
+endif ()
 
 # TLS support.
 
@@ -120,9 +148,17 @@ mark_as_advanced(NNG_TRANSPORT_IPC)
 option (NNG_TRANSPORT_TCP "Enable TCP transport." ON)
 mark_as_advanced(NNG_TRANSPORT_TCP)
 
+# MQTT TCP transport
+option (NNG_TRANSPORT_MQTT_TCP "Enable MQTT TCP transport." ON)
+mark_as_advanced(NNG_TRANSPORT_MQTT_TCP)
+
 # TLS transport
 option (NNG_TRANSPORT_TLS "Enable TLS transport." ON)
 mark_as_advanced(NNG_TRANSPORT_TLS)
+
+# MQTT TLS transport
+option (NNG_TRANSPORT_MQTT_TLS "Enable MQTT TLS transport." ON )
+mark_as_advanced(NNG_TRANSPORT_MQTT_TLS)
 
 # WebSocket
 option (NNG_TRANSPORT_WS "Enable WebSocket transport." ON)

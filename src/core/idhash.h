@@ -54,11 +54,18 @@ extern int   nni_id_alloc(nni_id_map *, uint64_t *, void *);
 extern int   nni_id_alloc32(nni_id_map *, uint32_t *, void *);
 extern int   nni_id_remove(nni_id_map *, uint64_t);
 extern void  nni_id_map_sys_fini(void);
+// NanoSDK usage
+extern void  nni_id_map_foreach(nni_id_map *, nni_idhash_cb);
+
 
 #define NNI_ID_MAP_INITIALIZER(min, max, flags)            \
 	{                                                  \
 		.id_min_val = (min), .id_max_val = (max),  \
 		.id_flags = ((flags) | NNI_ID_FLAG_STATIC) \
 	}
+
+// NanoSDK
+extern void *nni_id_get_min(nni_id_map *m, uint16_t *pid);
+extern void  nni_id_msgfree_cb(nni_msg *msg);
 
 #endif // CORE_IDHASH_H

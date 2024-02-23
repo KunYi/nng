@@ -61,11 +61,52 @@ nni_id_map_fini(nni_id_map *m)
 	}
 }
 
+void
+nni_id_map_foreach(nni_id_map *m, nni_idhash_cb cb)
+{
+	if (m->id_entries != NULL) {
+		for (size_t i = 0; i < m->id_cap; ++i) {
+			if (m->id_entries[i].val != NULL) {
+				cb((void *) &m->id_entries[i].key,
+				    m->id_entries[i].val);
+			}
+		}
+	}
+}
+
 // Inspired by Python dict implementation.  This probe will visit every
 // cell.  We always hash consecutively assigned IDs.  This requires that
 // the capacity is always a power of two.
 #define ID_NEXT(m, j) ((((j) *5) + 1) & (m->id_cap - 1))
 #define ID_INDEX(m, j) ((j) & (m->id_cap - 1))
+
+// return any solid object in table with key.
+void *
+nni_id_get_any(nni_id_map *m, uint16_t *pid)
+{
+	size_t index;
+	size_t start;
+	if (m->id_count == 0 || m->id_entries == NULL) {
+		return NULL;
+	}
+
+	index = 1;
+	start = index;
+	for (;;) {
+		// The value of ihe_key is only valid if ihe_val is not NULL.
+		if (m->id_entries[index].val != NULL) {
+			*pid = m->id_entries[index].key;
+			return m->id_entries[index].val;
+		}
+		index = ID_NEXT(m, index);
+
+		if (index == start) {
+			break;
+		}
+	}
+
+	return NULL;
+}
 
 static size_t
 id_find(nni_id_map *m, uint64_t id)
@@ -106,6 +147,66 @@ nni_id_get(nni_id_map *m, uint64_t id)
 	}
 	return (m->id_entries[index].val);
 }
+
+/**
+ * get message from idhash, start from *pid on rolling base
+ * return the first matched msg with its packet ID
+ * Potentially affect QoS msg throughput
+*/
+void *
+nni_id_get_min(nni_id_map *m, uint16_t *pid)
+{
+	size_t   index = *pid;
+	uint16_t id    = *pid;
+
+	if (m->id_count == 0 || m->id_entries == NULL) {
+		return NULL;
+	}
+
+	for (;;) {
+		if ((index = id_find(m, id)) == (size_t) -1) {
+			id++;
+			if (id == *pid) {
+				break;
+			}
+		} else {
+			*pid = m->id_entries[index].key;
+			return (m->id_entries[index].val);
+		}
+	}
+
+	return NULL;
+}
+
+
+/*
+ * return any solid value in hash, with key returned.
+
+void *
+nni_id_get_any(nni_id_map *m, uint16_t *pid)
+{
+	size_t index = 1;
+	size_t start = index;
+	if (m->id_count == 0 || m->id_entries == NULL) {
+		return NULL;
+	}
+
+	for (;;) {
+		// The value of ihe_key is only valid if ihe_val is not NULL.
+		if (m->id_entries[index].val != NULL) {
+			*pid = m->id_entries[index].key;
+			return m->id_entries[index].val;
+		}
+		index = ID_NEXT(m, index);
+
+		if (index == start) {
+			break;
+		}
+	}
+
+	return NULL;
+}
+*/
 
 static int
 id_map_register(nni_id_map *m)
@@ -366,4 +467,12 @@ nni_id_alloc32(nni_id_map *m, uint32_t *idp, void *val)
 	NNI_ASSERT(id < (1ULL << 32));
 	*idp = (uint32_t) id;
 	return (rv);
+}
+
+// Added by NanoSDK
+void
+nni_id_msgfree_cb(nni_msg* msg)
+{
+	nni_msg_free(msg);
+	msg = NULL;
 }

@@ -24,11 +24,13 @@ typedef struct {
 
 // Underlying message structure.
 struct nng_msg {
-	uint32_t       m_header_buf[(NNI_MAX_MAX_TTL + 1)];
-	size_t         m_header_len;
-	nni_chunk      m_body;
-	uint32_t       m_pipe; // set on receive
-	nni_atomic_int m_refcnt;
+	uint32_t           m_header_buf[(NNI_MAX_MAX_TTL + 1)];
+	size_t             m_header_len;
+	nni_chunk          m_body;
+	nni_proto_msg_ops *m_proto_ops;
+	void *             m_proto_data;
+	uint32_t           m_pipe; // set on receive
+	nni_atomic_int     m_refcnt;
 };
 
 #if 0
@@ -427,6 +429,17 @@ nni_msg_dup(nni_msg **dup, const nni_msg *src)
 	nni_atomic_init(&m->m_refcnt);
 	nni_atomic_set(&m->m_refcnt, 1);
 
+	// clone protocol data if a method was supplied.
+	if (src->m_proto_ops != NULL && src->m_proto_ops->msg_free != NULL) {
+		rv = src->m_proto_ops->msg_dup(
+		    &m->m_proto_data, src->m_proto_data);
+		if (rv != 0) {
+			nni_msg_free(m);
+			return (NNG_ENOMEM);
+		}
+		m->m_proto_ops = src->m_proto_ops;
+	}
+
 	*dup = m;
 	return (0);
 }
@@ -436,6 +449,11 @@ nni_msg_free(nni_msg *m)
 {
 	if ((m != NULL) && (nni_atomic_dec_nv(&m->m_refcnt) == 0)) {
 		nni_chunk_free(&m->m_body);
+
+		if (m->m_proto_ops != NULL &&
+		    m->m_proto_ops->msg_free != NULL) {
+			m->m_proto_ops->msg_free(m->m_proto_data);
+		}
 		NNI_FREE_STRUCT(m);
 	}
 }
@@ -633,4 +651,55 @@ uint32_t
 nni_msg_get_pipe(const nni_msg *m)
 {
 	return (m->m_pipe);
+}
+
+void
+nni_msg_set_proto_data(nng_msg *m, nni_proto_msg_ops *ops, void *data)
+{
+	if (m->m_proto_ops != NULL && m->m_proto_ops->msg_free != NULL) {
+		m->m_proto_ops->msg_free(m->m_proto_data);
+	}
+	m->m_proto_ops  = ops;
+	m->m_proto_data = data;
+}
+
+void *
+nni_msg_get_proto_data(nng_msg *m)
+{
+	return (m->m_proto_data);
+}
+
+uint8_t
+nni_msg_cmd_type(nni_msg *m)
+{
+	return ((uint8_t)m->m_header_buf[0] & 0xF0);
+}
+
+uint8_t
+nni_msg_get_pub_qos(nni_msg *m)
+{
+	uint8_t qos;
+
+	if (nni_msg_cmd_type(m) != 0x30) {
+		return -1;
+	}
+	qos = (m->m_header_buf[0] & 0x06) >> 1;
+	return qos;
+}
+
+uint16_t
+nni_msg_get_pub_pid(nni_msg *m)
+{
+	uint16_t pid;
+	uint8_t *pos, len;
+
+	pos = nni_msg_body(m);
+	NNI_GET16(pos, len);
+	// assume a min pub packet here
+	if (len > nni_msg_len(m) - 3)
+		return 0;
+	else {
+		NNI_GET16(pos + len + 2, pid);
+		return pid;
+	}
 }

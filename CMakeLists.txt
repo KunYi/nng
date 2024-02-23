@@ -43,8 +43,8 @@ if ("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 endif ("${isSystemDir}" STREQUAL "-1")
 
-set(NNG_DESCRIPTION "High-Performance Scalability Protocols NextGen")
-set(ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nng")
+set(NNG_DESCRIPTION "High-Performance Scalability Protocols NextGen - NanoMQ version")
+set(ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/emqx/NanoSDK/issues")
 
 # Determine library versions.
 file(READ "include/nng/nng.h" nng_ver_h)
@@ -75,7 +75,13 @@ add_definitions(-DNNG_PRIVATE)
 
 if (NOT (BUILD_SHARED_LIBS))
     set(NNG_STATIC_LIB ON)
+    add_compile_options(-fPIC)
     message(STATUS "Building static libs.")
+endif ()
+
+# log is enabled in default
+if (NOT NOLOG)
+  add_definitions(-DENABLE_LOG)
 endif ()
 
 # These are library targets.  The "nng" library is the main public library.
@@ -168,7 +174,7 @@ endif()
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
     set(NNG_WARN_FLAGS "-Wall -Wextra -fno-omit-frame-pointer")
 elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
-    set(NNG_WARN_FLAGS "-Wall -Wextra -fno-omit-frame-pointer")
+    set(NNG_WARN_FLAGS "-Wall -Wextra -fno-omit-frame-pointer -Wno-microsoft-anon-tag")
 endif ()
 
 include(CheckSanitizer)
@@ -277,9 +283,18 @@ if (NNG_ENABLE_TLS)
     add_definitions(-DNNG_SUPP_TLS)
 endif ()
 
+if (NNG_ENABLE_SQLITE)
+    add_definitions(-DNNG_SUPP_SQLITE)
+endif ()
+
 if (NNG_TESTS)
     enable_testing()
     set(all_tests, "")
+endif ()
+
+if(NNG_ENABLE_QUIC)
+  set(NNG_PROTO_MQTT_QUIC_CLIENT ON)
+  add_definitions(-DSUPP_QUIC)
 endif ()
 
 add_subdirectory(src)
@@ -294,9 +309,9 @@ add_subdirectory(docs/man)
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_VERSION ${NNG_PACKAGE_VERSION})
-set(CPACK_PACKAGE_CONTACT "nanomsg@freelists.org")
-set(CPACK_PACKAGE_VENDOR "nanomsg.org")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "nanomsg next generation library")
+set(CPACK_PACKAGE_CONTACT "jaylin@emqx.io")
+set(CPACK_PACKAGE_VENDOR "nanomq.io")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "nanosdk")
 set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME
@@ -307,3 +322,22 @@ set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${NNG_PACKAGE_VERSION}")
 
 add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 include(CPack)
+
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+  message("-- MODE [Debug] --")
+  SET(CMAKE_BUILD_TYPE "Debug")
+  add_definitions(-DDEBUG)
+  add_definitions(-DLOG_USE_COLOR)
+  if (ASAN)
+    message("* ASAN is enabled")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fsanitize=address")
+    add_definitions(-DASAN)
+  endif (ASAN)
+  if (TSAN)
+    message("* TSAN is enabled")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fsanitize=thread")
+    add_definitions(-DTSAN)
+  endif (TSAN)
+else()
+  message("-- MODE [Release] --")
+endif()

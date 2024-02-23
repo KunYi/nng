@@ -482,12 +482,21 @@ NNG_DECL void *nng_alloc(size_t);
 // calloc.
 NNG_DECL void nng_free(void *, size_t);
 
+// NanoSDK: Add Zalloc
+NNG_DECL void *nng_zalloc(size_t sz);
+
 // nng_strdup duplicates the source string, using nng_alloc. The result
 // should be freed with nng_strfree (or nng_free(strlen(s)+1)).
 NNG_DECL char *nng_strdup(const char *);
-
+// NanoSDK: length safe version of nng_strdup
+NNG_DECL char *nng_strndup(const char *, size_t);
 // nng_strfree is equivalent to nng_free(strlen(s)+1).
 NNG_DECL void nng_strfree(char *);
+
+// Add for NANOSDK
+NNG_DECL char *nng_strcasestr(const char *, const char *);
+NNG_DECL int   nng_strcasecmp(const char *, const char *);
+NNG_DECL int   nng_strncasecmp(const char *, const char *, size_t);
 
 // Async IO API.  AIO structures can be thought of as "handles" to
 // support asynchronous operations.  They contain the completion callback, and
