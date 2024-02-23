@@ -480,7 +480,9 @@ mqtt_timer_cb(void *arg)
 {
 	mqtt_pipe_t *p = arg;
 	mqtt_sock_t *s = p->mqtt_sock;
+#if defined(NNG_SUPP_SQLITE)
 	nni_msg *  msg;
+#endif
 	// nni_aio *  aio;
 	// uint16_t   pid = p->rid;
 
@@ -884,6 +886,7 @@ mqtt_ctx_send(void *arg, nni_aio *aio)
 		if (qos == 0) {
 			break;
 		}
+		// fall through
 	case NNG_MQTT_SUBSCRIBE:
 	case NNG_MQTT_UNSUBSCRIBE:
 		packet_id = mqtt_get_next_packet_id(&s->next_packet_id);

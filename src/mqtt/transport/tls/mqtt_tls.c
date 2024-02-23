@@ -859,10 +859,13 @@ mqtts_tcptran_pipe_send_start(mqtts_tcptran_pipe *p)
 			if (qos > 0)
 				p->sndmax --;
 			if (qos > p->qosmax) {
-				p->qosmax == 1? (*header &= 0XF9) & (*header |= 0X02):*header;
-				p->qosmax == 0? *header &= 0XF9:*header;
+				if (p->qosmax == 1) {
+					*header &= 0XF9;
+					*header |= 0X02;
+				} else if (p->qosmax == 0) {
+					*header &= 0XF9;
+				}
 			}
-
 		}
 		// check max packet size
 		if (nni_msg_header_len(msg) + nni_msg_len(msg) > p->packmax) {
